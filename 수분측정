@@ -3,12 +3,12 @@
 #define LED_PIN 13
 
 // Humidity check
-#define CHECK_INTERVAL 300000
+#define CHECK_INTERVAL 300000 //흙의 습도를 측정하는 간격
 unsigned long prevReadTime = 0;
 
 // Water pump control
-#define AUTO_STOP_INTERVAL 1500
-#define HUMIDITY_THRESHOLD 250
+#define AUTO_STOP_INTERVAL 1500 //물 펌프가 동작하는 시간
+#define HUMIDITY_THRESHOLD 250 //흙의 습도가 몇일때 동작할지
 int isValveOn = 0;
 unsigned long prevValveTime = 0;
 
@@ -19,36 +19,36 @@ void setup() {
   Serial.println("Smart flowerpot");
 
   // initialization
-  pinMode(CONTROL_PIN, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(CONTROL_PIN, LOW);
-  digitalWrite(LED_PIN, LOW);
+  pinMode(CONTROL_PIN, OUTPUT); //CONTROL_PIN을 출력핀으로 설정
+  pinMode(LED_PIN, OUTPUT);//ED_PIN을 출력핀으로 설정
+  digitalWrite(CONTROL_PIN, LOW);//CONTROL_PIN을 0볼트로
+  digitalWrite(LED_PIN, LOW);//ED_PIN을 0볼트로
 }
 
 
 
 void loop() {
-  // turn off the water pump
+  // turn off the water pump,물펌프 끄기, millis-아두이노가 실행되고 난 후 경과한 시간
   if(isValveOn > 0 && millis() - prevValveTime > AUTO_STOP_INTERVAL) {
-    digitalWrite(CONTROL_PIN, LOW);
+    digitalWrite(CONTROL_PIN, LOW);//CONTROL_PIN을 내린다.,물펌프 끄기
     isValveOn = 0;
     Serial.println("Stop pumping...");
   }
   
   //------------------------------------------------------
-  //----- Check humidity info
+  //----- Check humidity info습도채크
   //------------------------------------------------------
-  if(millis() - prevReadTime > CHECK_INTERVAL) {
-    int humi = analogRead(HUMI_PIN);
-    prevReadTime = millis();
+  if(millis() - prevReadTime > CHECK_INTERVAL) {//습도측정 간격 채크
+    int humi = analogRead(HUMI_PIN);//값을 읽고 디지털 값으로 변환,습도
+    prevReadTime = millis();//습도체크 시간 재설정
     Serial.print("Humidity: ");
     Serial.print(humi);
     Serial.println(" %");
 
     // send data to server
-    if(humi < HUMIDITY_THRESHOLD) {
-      digitalWrite(CONTROL_PIN, HIGH);
-      prevValveTime = millis();
+    if(humi < HUMIDITY_THRESHOLD) {//습도가 지정한 습도보다 낮을때
+      digitalWrite(CONTROL_PIN, HIGH);//CONTROL_PIN을 올린다.,물펌프 키기
+      prevValveTime = millis();//습도체크 시간 재설정
       isValveOn = 1;
       Serial.println("Start pumping...");
     }
