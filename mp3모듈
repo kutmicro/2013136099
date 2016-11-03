@@ -10,13 +10,12 @@ void setup () {
   delay(1);                     // delay 1ms to set volume
   mp3_set_volume (15);          // value 0~30
 }
-void loop () {
-  boolean play_state = digitalRead(3);// connect Pin3 to BUSY pin of player
-  if(play_state == HIGH){
-    mp3_next ();
-  }
+void loop () {        
+	mp3_play (1);//0001.mp3재생
+	delay (30000);
+	mp3_play (2);//0002.mp3재생
+  delay (30000);
 }
-
 
 // MP3 모듈 라이브러리의 function 
 mp3_play ();     //start play
