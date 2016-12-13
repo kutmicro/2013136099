@@ -161,7 +161,7 @@ void loop(void) {
   if(distance <= 5 && distance >=0 ){//물의 양에 따라 waterfind에 다르게 저장 (0=물의 양 충분, 1 = 부족, 2=센서 에러)
     waterfind = 0;
   }
-  else if(waterfind > 5 && waterfind <=15){
+  else if(distance > 5 && distance <=15){
     waterfind = 1;
   }
   else {
@@ -171,13 +171,7 @@ void loop(void) {
   Serial.println("cm");   // 문자열 cm을 출력하고 줄바꿈
   delay(100);             // 딜레이 0.1초
   
-  // picture loop
-  // LCD출력
-  u8g.firstPage();  
-  do {
-    draw();
-  } 
-  while( u8g.nextPage() );
+  
   //컨트롤러 신호를 시리얼 모니터에 출력
   Serial.print("Switch:  ");
   Serial.print(digitalRead(SW_pin));
@@ -198,7 +192,7 @@ void loop(void) {
     mp3_set_volume (volumNum);  //볼륨 설정
   }
   if((analogRead(X_pin)>350&&analogRead(X_pin)<450)&&(analogRead(Y_pin)>350&&analogRead(X_pin)<450)){//볼륨조절(볼륨 줄이기)
-   if(volumNum <30){
+   if(volumNum <=30&&volumNum >1){
       volumNum--;
     }
     else if(volumNum ==  1){
@@ -206,8 +200,14 @@ void loop(void) {
     }
     mp3_set_volume (volumNum);  //볼륨 설정
   }
+
+  // picture loop
+  // LCD출력
+  u8g.firstPage();  
+  do {
+    draw();
+  } 
+  while( u8g.nextPage() );
   
   delay(500);
 }
-
-
