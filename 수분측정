@@ -29,7 +29,7 @@ void setup() {
 
 void loop() {
   // turn off the water pump,물펌프 끄기, millis-아두이노가 실행되고 난 후 경과한 시간
-  if(isValveOn > 0 && millis() - prevValveTime > AUTO_STOP_INTERVAL) {//펌프가 작동하고, 습도측정간격이 넘어갔을때
+  if(isValveOn > 0 && millis() - prevValveTime > AUTO_STOP_INTERVAL) {//펌프가 작동하고, 펌프동작시간이후
     digitalWrite(CONTROL_PIN, LOW);//CONTROL_PIN을 내린다.,물펌프 끄기
     isValveOn = 0;//펌프작동안함
     Serial.println("Stop pumping...");
