@@ -1,9 +1,9 @@
-int trig = 7;           // 변수 trig를 생성하고 7를 대입한다
-int echo = 6;          // 변수 echo를 생성하고 6을 대입한다
+int trig = 3;           // 변수 trig를 생성하고 3 대입한다
+int echo = 2;          // 변수 echo를 생성하고 2 대입한다
 
 void setup() {                      
-pinMode(trig, OUTPUT);  // trig(13)핀을 출력모드로 설정한다
-pinMode(echo, INPUT); // echo(12)핀을 입력모드로 설정한다
+pinMode(trig, OUTPUT);  // trig핀(3)을 출력모드로 설정한다
+pinMode(echo, INPUT); // echo핀(2)을 입력모드로 설정한다
 Serial.begin(9600); //보드레이트를 설정합니다.
 } 
 
