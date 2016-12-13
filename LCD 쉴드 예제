@@ -1,0 +1,66 @@
+#include "U8glib.h"
+
+U8GLIB_NHD_C12864 u8g(13, 11, 10, 9, 8);  // SPI Com: SCK = 13, MOSI = 11, CS = 10, CD = 9, RST = 8
+const int SW_pin = 2; // digital pin connected to switch output
+const int X_pin = 0; // analog pin connected to X output
+const int Y_pin = 1; // analog pin connected to Y output
+
+void draw(void) {
+ 
+  // graphic commands to redraw the complete screen should be placed here  
+  u8g.setFont(u8g_font_unifont);
+  //u8g.setFont(u8g_font_osb21);
+  u8g.drawStr( 0, 20, "Water : ");
+  u8g.drawStr( 0, 40, "Sound : 15");
+  if((analogRead(X_pin)>800&&analogRead(X_pin)<850)&&(analogRead(Y_pin)>700&&analogRead(X_pin)<850)){
+    u8g.drawStr( 0, 20, "Water : ");
+    u8g.drawStr( 0, 40, "Sound : 16");
+  }
+  
+}
+
+void setup(void) {
+  pinMode(SW_pin, INPUT);
+  digitalWrite(SW_pin, HIGH);
+  Serial.begin(9600);
+  u8g.setContrast(0); // Config the contrast to the best effect
+  u8g.setRot180();// rotate screen, if required
+  // set SPI backup if required
+  //u8g.setHardwareBackup(u8g_backup_avr_spi);
+
+  // assign default color value
+  if ( u8g.getMode() == U8G_MODE_R3G3B2 ) {
+    u8g.setColorIndex(255);     // white
+  }
+  else if ( u8g.getMode() == U8G_MODE_GRAY2BIT ) {
+    u8g.setColorIndex(3);         // max intensity
+  }
+  else if ( u8g.getMode() == U8G_MODE_BW ) {
+    u8g.setColorIndex(1);         // pixel on
+  }
+  else if ( u8g.getMode() == U8G_MODE_HICOLOR ) {
+    u8g.setHiColorByRGB(255,255,255);
+  }
+}
+
+void loop(void) {
+  // picture loop
+  u8g.firstPage();  
+  do {
+    draw();
+  } 
+  while( u8g.nextPage() );
+  Serial.print("Switch:  ");
+  Serial.print(digitalRead(SW_pin));
+  Serial.print("\n");
+  Serial.print("X-axis: ");
+  Serial.print(analogRead(X_pin));
+  Serial.print("\n");
+  Serial.print("Y-axis: ");
+  Serial.println(analogRead(Y_pin));
+  Serial.print("\n\n");
+  delay(500);
+
+  // rebuild the picture after some delay
+  delay(500);
+}
