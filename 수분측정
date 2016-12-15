@@ -1,4 +1,4 @@
-#define HUMI_PIN A1
+#define HUMI_PIN A2
 #define CONTROL_PIN 5
 #define LED_PIN 13
 
