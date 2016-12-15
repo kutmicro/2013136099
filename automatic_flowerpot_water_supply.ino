@@ -13,10 +13,23 @@ const int trig = 3;           // 변수 trig를 생성하고 3 대입한다
 const int echo = 2;          // 변수 echo를 생성하고 2 대입한다
 int waterfind;          //물탱크 안의 물 확인(0=물의 양 충분, 1 = 부족, 2=센서 에러)
 int volumNum = 10; //소리의 크기(시작볼륨)
-int waterpump = 0; //물탱크(0=끔, 1=킴)
+int waterpump = 0; //물탱크(0=허용안됨, 1=허용)
 int music = 0; //음악 실행(0=끔, 1=킴)
 int menuchoice = 1;//메뉴 선택( 1=물펌프, 2=음악, 3=소리, 4=음악선택)
 int menu = 0;//메뉴 화면(0=기본 메뉴, 1=음악메뉴)
+
+#define HUMI_PIN A2
+#define CONTROL_PIN 5
+
+// Humidity check
+#define CHECK_INTERVAL 300 //흙의 습도를 측정하는 간격
+unsigned long prevReadTime = 0;
+
+// Water pump control
+#define AUTO_STOP_INTERVAL 1500 //물 펌프가 동작하는 시간
+#define HUMIDITY_THRESHOLD 250 //흙의 습도가 몇일때 동작할지
+int isValveOn = 0;//펌프가 작동시 1, 작동안할시 0
+unsigned long prevValveTime = 0;
 
 void draw(void) {
 
@@ -78,6 +91,11 @@ void setup(void) {
   mp3_set_serial (mySerial);    //set softwareSerial for DFPlayer-mini mp3 module 
   delay(1);                     // delay 1ms to set volume
   mp3_set_volume (volumNum);          // value 0~30볼륨설정
+  
+  // initialization
+  pinMode(CONTROL_PIN, OUTPUT); //CONTROL_PIN을 출력핀으로 설정
+  digitalWrite(CONTROL_PIN, LOW);//CONTROL_PIN을 0볼트로,펌프핀
+  
   u8g.setContrast(0); // Config the contrast to the best effect
   u8g.setRot180();// rotate screen, if required
   // set SPI backup if required
@@ -114,10 +132,37 @@ void loop(void) {
   else {
     waterfind = 2;
   }
+  
   Serial.print(distance);  // 변수 distance를 출력한다
   Serial.println("cm");   // 문자열 cm을 출력하고 줄바꿈
   delay(100);             // 딜레이 0.1초
+
+   //펌프
+   // turn off the water pump,물펌프 끄기, millis-아두이노가 실행되고 난 후 경과한 시간
+  if(isValveOn > 0 && millis() - prevValveTime > AUTO_STOP_INTERVAL) {//펌프가 작동하고, 펌프동작시간이후
+    digitalWrite(CONTROL_PIN, LOW);//CONTROL_PIN을 내린다.,물펌프 끄기
+    isValveOn = 0;//펌프작동안함
+    Serial.println("Stop pumping...");
+  }
   
+  //------------------------------------------------------
+  //----- Check humidity info습도채크
+  //------------------------------------------------------
+  if(millis() - prevReadTime > CHECK_INTERVAL) {//습도측정 간격 채크
+    int humi = analogRead(HUMI_PIN);//값을 읽고 디지털 값으로 변환,습도
+    prevReadTime = millis();//습도체크 시간 재설정
+    Serial.print("Humidity: ");
+    Serial.print(humi);
+    Serial.println(" %");
+
+    // send data to server
+    if(humi < HUMIDITY_THRESHOLD && waterpump == 1) {//습도가 지정한 습도보다 낮을때,물펌프동작을 허용할때
+      digitalWrite(CONTROL_PIN, HIGH);//CONTROL_PIN을 올린다.,물펌프 키기
+      prevValveTime = millis();//습도체크 시간 재설정
+      isValveOn = 1;//펌프작동
+      Serial.println("Start pumping...");
+    }
+  }
   
   //컨트롤러 신호를 시리얼 모니터에 출력
   Serial.print("Switch:  ");
@@ -139,7 +184,7 @@ void loop(void) {
        menuchoice++;
      }
   }
-  if((analogRead(X_pin)>=0&&analogRead(X_pin)<50)&&(analogRead(Y_pin)>100&&analogRead(X_pin)<150)){//좌
+  if((analogRead(X_pin)==0)&&(analogRead(X_pin)<150)){//좌
     if(menu == 0){
      if(menuchoice == 1){
         waterpump = 0;
