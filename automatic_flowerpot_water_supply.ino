@@ -156,7 +156,7 @@ void loop(void) {
     Serial.println(" %");
 
     // send data to server
-    if(humi < HUMIDITY_THRESHOLD && waterpump == 1) {//습도가 지정한 습도보다 낮을때,물펌프동작을 허용할때
+    if(humi < HUMIDITY_THRESHOLD && waterpump == 1 && waterfind ==0) {//습도가 지정한 습도보다 낮을때,물펌프동작을 허용할때,물탱크에 물의 양이 충분할때
       digitalWrite(CONTROL_PIN, HIGH);//CONTROL_PIN을 올린다.,물펌프 키기
       prevValveTime = millis();//습도체크 시간 재설정
       isValveOn = 1;//펌프작동
