@@ -8,115 +8,62 @@ U8GLIB_NHD_C12864 u8g(13, 11, 10, 9, 8);  // SPI Com: SCK = 13, MOSI = 11, CS = 
 const int SW_pin = 2; // digital pin connected to switch output
 const int X_pin = 0; // analog pin connected to X output
 const int Y_pin = 1; // analog pin connected to Y output
-int volumNum = 10; //소리의 크기(시작볼륨)
+
 const int trig = 3;           // 변수 trig를 생성하고 3 대입한다
 const int echo = 2;          // 변수 echo를 생성하고 2 대입한다
 int waterfind;          //물탱크 안의 물 확인(0=물의 양 충분, 1 = 부족, 2=센서 에러)
+int volumNum = 10; //소리의 크기(시작볼륨)
+int waterpump = 0; //물탱크(0=끔, 1=킴)
+int music = 0; //음악 실행(0=끔, 1=킴)
+int menuchoice = 1;//메뉴 선택( 1=물펌프, 2=음악, 3=소리, 4=음악선택)
+int menu = 0;//메뉴 화면(0=기본 메뉴, 1=음악메뉴)
 
 void draw(void) {
- 
+
+  char charvolumNum[2];
   // graphic commands to redraw the complete screen should be placed here  
-  u8g.setFont(u8g_font_unifont);
+  //u8g.setFont(u8g_font_unifont);
+  u8g.setFont(u8g_font_4x6);
   //u8g.setFont(u8g_font_osb21);
   if(waterfind==0 ){//물의 양 LCD에출력
-    u8g.drawStr( 0, 20, "Water : enough");
+    u8g.drawStr( 3, 10, "   Water : enough");
   }
   else if(waterfind ==1){
-     u8g.drawStr( 0, 20, "Water : lack");
+     u8g.drawStr( 3, 10, "   Water : lack");
   }
   else if(waterfind ==2){
-     u8g.drawStr( 0, 20, "Water : error");
+     u8g.drawStr( 3, 10, "   Water : error");
+  }
+  if(menu ==0){
+    if(waterpump == 0 ){
+       u8g.drawStr( 3, 20, "   water pump : off ");
+    }
+    else if(waterpump == 1 ){
+      u8g.drawStr( 3, 20, "   water pump : on ");
+    }
+    if( music == 0){
+      u8g.drawStr( 3, 30, "   music : off ");
+    }
+   else if(music == 1){
+      u8g.drawStr( 3, 30, "   music : on ");
+    }
+   dtostrf(volumNum, 3, 0, charvolumNum);//volumNum을 char형으로 바꿈
+   u8g.drawStr( 3, 40, "   Sound : ");
+   u8g.drawStr( 40, 40, charvolumNum);
+   u8g.drawStr( 3, 50, "   music choice  ");
   }
   
-  if(volumNum == 1){//소리 LCD에출력
-    u8g.drawStr( 0, 50, "Sound : 1");
+  if(menuchoice == 1){
+    u8g.drawStr( 0, 20, ">");
   }
-  else if(volumNum == 2){
-    u8g.drawStr( 0, 50, "Sound : 2");
+  else if(menuchoice == 2){
+    u8g.drawStr( 0, 30, ">");
   }
-  else if(volumNum == 3){
-    u8g.drawStr( 0, 50, "Sound : 3");
+  else if(menuchoice == 3){
+    u8g.drawStr( 0, 40, ">");
   }
-  else if(volumNum == 4){
-    u8g.drawStr( 0, 50, "Sound : 4");
-  }
-  else if(volumNum == 5){
-    u8g.drawStr( 0, 50, "Sound : 5");
-  }
-  else if(volumNum == 6){
-    u8g.drawStr( 0, 50, "Sound : 6");
-  }
-  else if(volumNum == 7){
-    u8g.drawStr( 0, 50, "Sound : 7");
-  }
-  else if(volumNum == 8){
-    u8g.drawStr( 0, 50, "Sound : 8");
-  }
-  else if(volumNum == 9){
-    u8g.drawStr( 0, 50, "Sound : 9");
-  }
-  else if(volumNum == 10){
-    u8g.drawStr( 0, 50, "Sound : 10");
-  }
-  else if(volumNum == 11){
-    u8g.drawStr( 0, 50, "Sound : 11");
-  }
-  else if(volumNum == 12){
-    u8g.drawStr( 0, 50, "Sound : 12");
-  }
-  else if(volumNum == 13){
-    u8g.drawStr( 0, 50, "Sound : 13");
-  }
-  else if(volumNum == 14){
-    u8g.drawStr( 0, 50, "Sound : 14");
-  }
-  else if(volumNum == 15){
-    u8g.drawStr( 0, 50, "Sound : 15");
-  }
-  else if(volumNum == 16){
-    u8g.drawStr( 0, 50, "Sound : 16");
-  }
-  else if(volumNum == 17){
-    u8g.drawStr( 0, 50, "Sound : 17");
-  }
-  else if(volumNum == 18){
-    u8g.drawStr( 0, 50, "Sound : 18");
-  }
-  else if(volumNum == 19){
-    u8g.drawStr( 0, 50, "Sound : 19");
-  }
-  else if(volumNum == 20){
-    u8g.drawStr( 0, 50, "Sound : 20");
-  }
-  else if(volumNum == 21){
-    u8g.drawStr( 0, 50, "Sound : 21");
-  }
-  else if(volumNum == 22){
-    u8g.drawStr( 0, 50, "Sound : 22");
-  }
-  else if(volumNum == 23){
-    u8g.drawStr( 0, 50, "Sound : 23");
-  }
-  else if(volumNum == 24){
-    u8g.drawStr( 0, 50, "Sound : 24");
-  }
-  else if(volumNum == 25){
-    u8g.drawStr( 0, 50, "Sound : 25");
-  }
-  else if(volumNum == 26){
-    u8g.drawStr( 0, 50, "Sound : 26");
-  }
-  else if(volumNum == 27){
-    u8g.drawStr( 0, 50, "Sound : 27");
-  }
-  else if(volumNum == 28){
-    u8g.drawStr( 0, 50, "Sound : 28");
-  }
-  else if(volumNum == 29){
-    u8g.drawStr( 0, 50, "Sound : 29");
-  }
-  else if(volumNum == 30){
-    u8g.drawStr( 0, 50, "Sound : 30");
+  else{
+    u8g.drawStr( 0, 50, ">");
   }
 
 }
@@ -182,24 +129,57 @@ void loop(void) {
   Serial.print("Y-axis: ");
   Serial.println(analogRead(Y_pin));
   Serial.print("\n\n");
-  if((analogRead(X_pin)>800&&analogRead(X_pin)<850)&&(analogRead(Y_pin)>700&&analogRead(X_pin)<850)){//볼륨조절(볼륨 높이기)
-    if(volumNum <30){
-      volumNum++;
+  if((analogRead(X_pin)>800&&analogRead(X_pin)<850)&&(analogRead(Y_pin)>700&&analogRead(X_pin)<850)){//위
+    if(menuchoice>=2 && menuchoice<=4){
+       menuchoice--;
     }
-    else if(volumNum == 30){
-      volumNum = 1;
-    }
-    mp3_set_volume (volumNum);  //볼륨 설정
   }
-  if((analogRead(X_pin)>350&&analogRead(X_pin)<450)&&(analogRead(Y_pin)>350&&analogRead(X_pin)<450)){//볼륨조절(볼륨 줄이기)
-   if(volumNum <=30&&volumNum >1){
-      volumNum--;
-    }
-    else if(volumNum ==  1){
-      volumNum = 30;
-    }
-    mp3_set_volume (volumNum);  //볼륨 설정
+  if((analogRead(X_pin)>350&&analogRead(X_pin)<450)&&(analogRead(Y_pin)>350&&analogRead(X_pin)<450)){//아래
+     if(menuchoice>=1 && menuchoice<=3){
+       menuchoice++;
+     }
   }
+  if((analogRead(X_pin)>=0&&analogRead(X_pin)<50)&&(analogRead(Y_pin)>100&&analogRead(X_pin)<150)){//좌
+    if(menu == 0){
+     if(menuchoice == 1){
+        waterpump = 0;
+      }
+      else if(menuchoice == 2){
+        music = 0;
+     }
+      else if(menuchoice == 3){
+       if(volumNum>0){
+         volumNum--;
+         mp3_set_volume (volumNum);
+        }
+     }
+    }
+    else if(menu == 1){
+      menu = 0;
+      menuchoice = 4;
+    }
+  }
+  if((analogRead(X_pin)>=550&&analogRead(X_pin)<650)&&(analogRead(Y_pin)>550&&analogRead(X_pin)<650)){//우
+    if(menu == 0){
+      if(menuchoice == 1){
+        waterpump = 1;
+      }
+      else if(menuchoice == 2){
+      music = 1;
+      }
+      else if(menuchoice == 3){
+        if(volumNum<30){
+         volumNum++;
+         mp3_set_volume (volumNum);
+       }
+      }
+      else if(menuchoice == 4){
+        menu = 1;
+        menuchoice = 1;
+      }
+    }
+  }
+
 
   // picture loop
   // LCD출력
