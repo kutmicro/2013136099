@@ -1,43 +1,39 @@
-#include "U8glib.h"
-#include <SoftwareSerial.h>
-#include <DFPlayer_Mini_Mp3.h>
+#include "U8glib.h" //LCD라이브러리
+#include <SoftwareSerial.h>//시리얼 통신 라이브러리
+#include <DFPlayer_Mini_Mp3.h>//mp3 모듈 라이브러리
  
-SoftwareSerial mySerial(10, 11); // RX, TX
- 
-U8GLIB_NHD_C12864 u8g(13, 11, 10, 9, 8);  // SPI Com: SCK = 13, MOSI = 11, CS = 10, CD = 9, RST = 8
-const int SW_pin = 2; // digital pin connected to switch output
+U8GLIB_NHD_C12864 u8g(13, 11, 10, 9, 8);  // SPI Com: SCK = 13, MOSI = 11, CS = 10, CD = 9, RST = 8(LCD)
+const int trig = 3;           // 변수 trig를 생성하고 3 대입한다(초음파)
+const int echo = 2;          // 변수 echo를 생성하고 2 대입한다(초음파)
 const int X_pin = 0; // analog pin connected to X output
 const int Y_pin = 1; // analog pin connected to Y output
+#define HUMI_PIN A2 // 토양 습도 센서
+#define CONTROL_PIN 5// 릴레이
 
-const int trig = 3;           // 변수 trig를 생성하고 3 대입한다
-const int echo = 2;          // 변수 echo를 생성하고 2 대입한다
-int waterfind;          //물탱크 안의 물 확인(0=물의 양 충분, 1 = 부족, 2=센서 에러)
+#define musictimespring 219000//봄의 노래 길이
+#define musictimesummer 201000//여름의 노래 길이
+#define musictimewinter 216000//겨울의 노래 길이
+#define CHECK_INTERVAL 10000 //흙의 습도를 측정하는 간격
+#define AUTO_STOP_INTERVAL 5000 //물 펌프가 동작하는 시간
+#define HUMIDITY_THRESHOLD 250 //흙의 습도가 몇일때 동작할지
+
+int waterfind;      //물탱크 안의 물 확인(0=물의 양 충분, 1 = 부족, 2=센서 에러)
 int volumNum = 10; //소리의 크기(시작볼륨)
 int waterpump = 0; //물탱크(0=허용안됨, 1=허용)
 int music = 0; //음악 실행(0=끔, 1=킴)
 int menuchoice = 1;//메뉴 선택( 1=물펌프, 2=음악, 3=소리, 4=음악선택)
 int menu = 0;//메뉴 화면(0=기본 메뉴, 1=음악메뉴)
-
-#define HUMI_PIN A2
-#define CONTROL_PIN 5
-
-// Humidity check
-#define CHECK_INTERVAL 300 //흙의 습도를 측정하는 간격
-unsigned long prevReadTime = 0;
-
-// Water pump control
-#define AUTO_STOP_INTERVAL 1500 //물 펌프가 동작하는 시간
-#define HUMIDITY_THRESHOLD 250 //흙의 습도가 몇일때 동작할지
+int musicplay = 0; //현재 선택된 곡(1=순차재생, 2=봄 반복, 3=여름반복, 4=겨울반복)
+int playingmusic = 0; //현재 재생되고 있는 곡(1=봄, 2=여름, 3=겨울)
 int isValveOn = 0;//펌프가 작동시 1, 작동안할시 0
-unsigned long prevValveTime = 0;
+unsigned long prevMusicTime = 0; //음악 실행시작 시간 체크
+unsigned long prevReadTime = 0; //습도 측정 시간 체크
+unsigned long prevValveTime = 0; //펌프 가동 시간 체크
 
 void draw(void) {
 
-  char charvolumNum[2];
-  // graphic commands to redraw the complete screen should be placed here  
-  //u8g.setFont(u8g_font_unifont);
-  u8g.setFont(u8g_font_4x6);
-  //u8g.setFont(u8g_font_osb21);
+  char charvolumNum[2]; // 볼륨을 출력하기 위해 char형 변수 선언
+  u8g.setFont(u8g_font_4x6); //폰트 및 글자 크기 설정
   if(waterfind==0 ){//물의 양 LCD에출력
     u8g.drawStr( 3, 10, "   Water : enough");
   }
@@ -47,26 +43,49 @@ void draw(void) {
   else if(waterfind ==2){
      u8g.drawStr( 3, 10, "   Water : error");
   }
-  if(menu ==0){
+  
+  if(menu ==0){//기본 화면
     if(waterpump == 0 ){
-       u8g.drawStr( 3, 20, "   water pump : off ");
+       u8g.drawStr( 3, 20, "   Water Pump : off ");
     }
     else if(waterpump == 1 ){
-      u8g.drawStr( 3, 20, "   water pump : on ");
+      u8g.drawStr( 3, 20, "   Water Pump : on ");
     }
     if( music == 0){
-      u8g.drawStr( 3, 30, "   music : off ");
+      u8g.drawStr( 3, 30, "   Music : off ");
     }
    else if(music == 1){
-      u8g.drawStr( 3, 30, "   music : on ");
+      u8g.drawStr( 3, 30, "   Music : on ");
     }
    dtostrf(volumNum, 3, 0, charvolumNum);//volumNum을 char형으로 바꿈
    u8g.drawStr( 3, 40, "   Sound : ");
-   u8g.drawStr( 40, 40, charvolumNum);
-   u8g.drawStr( 3, 50, "   music choice  ");
+   u8g.drawStr( 45, 40, charvolumNum);
+   u8g.drawStr( 3, 50, "   Music List  ");
   }
   
-  if(menuchoice == 1){
+  if(menu == 1){//음악 리스트 화면
+      u8g.drawStr( 3, 20, "   Order Play");
+    if(playingmusic == 1){
+      u8g.drawStr( 3, 30, "   The Four Seasons - Spring *");
+    }
+    else{
+      u8g.drawStr( 3, 30, "   The Four Seasons - Spring");
+    }
+    if(playingmusic == 2){
+      u8g.drawStr( 3, 40, "   The Four Seasons - Summer *");
+    }
+    else{
+      u8g.drawStr( 3, 40, "   The Four Seasons - Summer");
+    }
+    if(playingmusic == 3){
+     u8g.drawStr( 3, 50, "   The Four Seasons - Winter *");
+    }
+    else{
+      u8g.drawStr( 3, 50, "   The Four Seasons - Winter");
+    }
+  }
+  
+  if(menuchoice == 1){// 선택 출력
     u8g.drawStr( 0, 20, ">");
   }
   else if(menuchoice == 2){
@@ -82,26 +101,20 @@ void draw(void) {
 }
 
 void setup(void) {
-  pinMode(SW_pin, INPUT);
-  digitalWrite(SW_pin, HIGH);
-  pinMode(trig, OUTPUT);  // trig핀(3)을 출력모드로 설정한다
-  pinMode(echo, INPUT); // echo핀(2)을 입력모드로 설정한다
-  Serial.begin(9600);
-  mySerial.begin (9600);
-  mp3_set_serial (mySerial);    //set softwareSerial for DFPlayer-mini mp3 module 
+  
+  Serial.begin (9600);
+  mp3_set_serial (Serial);   //set softwareSerial for DFPlayer-mini mp3 module 
   delay(1);                     // delay 1ms to set volume
   mp3_set_volume (volumNum);          // value 0~30볼륨설정
   
-  // initialization
+  pinMode(trig, OUTPUT);  // trig핀(3)을 출력모드로 설정한다
+  pinMode(echo, INPUT); // echo핀(2)을 입력모드로 설정한다
   pinMode(CONTROL_PIN, OUTPUT); //CONTROL_PIN을 출력핀으로 설정
   digitalWrite(CONTROL_PIN, LOW);//CONTROL_PIN을 0볼트로,펌프핀
-  
-  u8g.setContrast(0); // Config the contrast to the best effect
-  u8g.setRot180();// rotate screen, if required
-  // set SPI backup if required
-  //u8g.setHardwareBackup(u8g_backup_avr_spi);
 
-  // assign default color value
+  //LCD 기본 설정
+  u8g.setContrast(0);
+  u8g.setRot180();
   if ( u8g.getMode() == U8G_MODE_R3G3B2 ) {
     u8g.setColorIndex(255);     // white
   }
@@ -158,22 +171,13 @@ void loop(void) {
     // send data to server
     if(humi < HUMIDITY_THRESHOLD && waterpump == 1 && waterfind ==0) {//습도가 지정한 습도보다 낮을때,물펌프동작을 허용할때,물탱크에 물의 양이 충분할때
       digitalWrite(CONTROL_PIN, HIGH);//CONTROL_PIN을 올린다.,물펌프 키기
-      prevValveTime = millis();//습도체크 시간 재설정
+      prevValveTime = millis();//펌프 가동 시간 재설정
       isValveOn = 1;//펌프작동
       Serial.println("Start pumping...");
     }
   }
-  
-  //컨트롤러 신호를 시리얼 모니터에 출력
-  Serial.print("Switch:  ");
-  Serial.print(digitalRead(SW_pin));
-  Serial.print("\n");
-  Serial.print("X-axis: ");
-  Serial.print(analogRead(X_pin));
-  Serial.print("\n");
-  Serial.print("Y-axis: ");
-  Serial.println(analogRead(Y_pin));
-  Serial.print("\n\n");
+
+  //LCD 실드의 조이스틱
   if((analogRead(X_pin)>800&&analogRead(X_pin)<850)&&(analogRead(Y_pin)>700&&analogRead(X_pin)<850)){//위
     if(menuchoice>=2 && menuchoice<=4){
        menuchoice--;
@@ -185,12 +189,17 @@ void loop(void) {
      }
   }
   if((analogRead(X_pin)==0)&&(analogRead(X_pin)<150)){//좌
-    if(menu == 0){
+    if(menu == 0){//기본 메뉴
      if(menuchoice == 1){
         waterpump = 0;
       }
       else if(menuchoice == 2){
         music = 0;
+        if(musicplay >= 1){
+          musicplay = 0;
+          playingmusic = 0;
+          mp3_stop();
+        }
      }
       else if(menuchoice == 3){
        if(volumNum>0){
@@ -199,13 +208,13 @@ void loop(void) {
         }
      }
     }
-    else if(menu == 1){
+    else if(menu == 1){//음악 리스트 메뉴
       menu = 0;
       menuchoice = 4;
     }
   }
   if((analogRead(X_pin)>=550&&analogRead(X_pin)<650)&&(analogRead(Y_pin)>550&&analogRead(X_pin)<650)){//우
-    if(menu == 0){
+    if(menu == 0){//기본 매뉴
       if(menuchoice == 1){
         waterpump = 1;
       }
@@ -223,8 +232,77 @@ void loop(void) {
         menuchoice = 1;
       }
     }
+    else if(menu == 1){//음악 리스트 메뉴
+      if(menuchoice == 1 && music == 1){
+        playingmusic = 1;
+        mp3_play (playingmusic);
+        musicplay = 1;
+        prevMusicTime = millis();
+      }
+      else if(menuchoice == 2 && music == 1){
+        playingmusic = 1;
+        mp3_play (playingmusic);
+        musicplay = 2;
+        prevMusicTime = millis();
+      }
+      else if(menuchoice == 3 && music == 1){
+        playingmusic = 2;
+        mp3_play (playingmusic);
+        musicplay = 3;
+        prevMusicTime = millis();
+      }
+      else if(menuchoice == 4 && music == 1){
+        playingmusic = 3;
+        mp3_play (playingmusic);
+        musicplay = 4;
+        prevMusicTime = millis();
+      }
+    }
+  }
+  
+  if(musicplay == 1){//음악 반복 재생(순차재생의 경우)
+    if(playingmusic == 1){
+      if(music==1&&millis() -  prevMusicTime > musictimespring){
+      prevMusicTime = millis();
+      playingmusic++;
+      mp3_play (playingmusic);
+      }
+    }
+    else if(playingmusic == 2){
+      if(music==1&&millis() -  prevMusicTime > musictimesummer){
+      prevMusicTime = millis();
+      playingmusic++;
+      mp3_play (playingmusic);
+      }
+    }
+    else if(playingmusic == 3){
+      if(music==1&&millis() -  prevMusicTime > musictimewinter){
+      prevMusicTime = millis();
+      playingmusic = 1;
+      mp3_play (playingmusic);
+      }
+    }
+  }
+  else if(musicplay >= 2){//봄곡 반복의 경우
+    if(music==1&&millis() -  prevMusicTime > musictimespring){
+      prevMusicTime = millis();
+      mp3_play (playingmusic);
+    }
+  }
+  else if(musicplay == 3){//여름곡 반복의 경우
+    if(music==1&&millis() -  prevMusicTime > musictimesummer){
+      prevMusicTime = millis();
+      mp3_play (playingmusic);
+    }
+  }
+  else if(musicplay == 4){//겨울 곡 반복의 경우
+    if(music==1&&millis() -  prevMusicTime > musictimewinter){
+      prevMusicTime = millis();
+      mp3_play (playingmusic);
+    }
   }
 
+  
 
   // picture loop
   // LCD출력
@@ -234,5 +312,5 @@ void loop(void) {
   } 
   while( u8g.nextPage() );
   
-  delay(500);
+  delay(100);
 }
